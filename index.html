@@ -110,6 +110,13 @@
   .toast.show { display:flex; }
   .toast span { flex:1; font-size:15px; }
   .toast button { background:none; border:0; color:var(--gold); font-weight:700; font-size:16px; cursor:pointer; padding:4px 6px; }
+  /* Buttons dip when pressed and show a spinner while waiting */
+  .btn:active:not(:disabled) { transform:scale(.97); filter:brightness(.92); }
+  .working { pointer-events:none; }
+  .working::before { content:''; display:inline-block; width:14px; height:14px; margin-right:8px; vertical-align:-2px;
+    border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .working::before { animation:none; } }
 </style>
 </head>
 <body>
@@ -274,6 +281,9 @@ function renderEvent(justMade) {
       '<div class="row"><a href="' + esc(L.sheet) + '" target="_blank" rel="noopener">Open the roster sheet</a> &nbsp;·&nbsp; ' +
         '<a href="' + esc(L.form) + '" target="_blank" rel="noopener">Edit the form</a></div></details>';
   }
+  // Team only, once the event has started: the after-event report and follow-up checklist
+  if (d.team && (e.isPast || e.isToday)) h += '<div class="card"><button class="btn ghost wide" type="button" id="repBtn">📋 Follow-up report</button>' +
+    '<div class="hint" id="repMsg" style="margin-top:8px">Who came, who didn\'t, PMA and payments, and the follow-up checklist. It also goes to anchor@ and academy@ the morning after.</div></div>';
   h += '<div id="stats"></div><div class="sticky"><input type="search" id="q" placeholder="Search names" autocomplete="off" value="' + esc(S.q) + '">' +
     '<div class="chips" id="chips"></div></div><div id="list"></div>' +
     '<button class="btn ghost wide" type="button" id="walkBtn" style="margin-top:6px">+ Add someone at the door</button><div id="walk"></div>';
@@ -281,6 +291,20 @@ function renderEvent(justMade) {
   $('app').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copyText(b, b.dataset.copy));
   $('q').oninput = () => { S.q = $('q').value; drawList(); };
   $('walkBtn').onclick = renderWalkIn;
+  const rb = $('repBtn');
+  if (rb) rb.onclick = () => {
+    rb.disabled = true; rb.classList.add('working'); rb.textContent = 'Making the report…';
+    call('makeReport', [e.id, S.key], r => {
+      if (!rb.isConnected) return;
+      rb.disabled = false; rb.classList.remove('working'); rb.textContent = '📋 Refresh the report';
+      $('repMsg').innerHTML = (r.emailed ? 'Done, and emailed to ' + esc(r.to) + '. ' : r.already ? 'Refreshed (it was already emailed to the circles). ' : 'Done. ') +
+        '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open the report</a>';
+    }, msg => {
+      if (!rb.isConnected) return;
+      rb.disabled = false; rb.classList.remove('working'); rb.textContent = '📋 Follow-up report';
+      $('repMsg').innerHTML = '<span class="err">' + esc(msg) + '</span>';
+    });
+  };
   drawList();
 }
 
