@@ -22,6 +22,7 @@
 <meta name="theme-color" content="#0a53a8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<!-- Events page v3 (Nov 23, 2026): events with parts. Needs the Events script v3. -->
 <style>
   :root { --ink:#1b2333; --quiet:#5f6368; --line:#e3e6ea; --bg:#ffffff; --soft:#f4f6f9;
           --c:#0a53a8; --cfg:#ffffff; --rose:#f8d7dc; --roseInk:#8a1c2c; --ok:#11734b; --gold:#E69B36; }
@@ -36,24 +37,37 @@
   .band a { color:var(--cfg); font-size:14px; }
   main { max-width:640px; margin:0 auto; padding:12px 12px 110px; }
   .card { background:var(--bg); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
-  .card h2 { font-size:16px; margin:0 0 10px; }
+  .card h2 { font-size:16px; margin:0 0 6px; }
   label.f { display:block; font-size:14px; font-weight:600; margin:12px 0 4px; }
   label.f:first-child { margin-top:0; }
   .hint { font-size:13px; color:var(--quiet); }
   input[type=text], input[type=email], input[type=tel], input[type=date], input[type=search], select {
-    width:100%; font-size:16px; padding:10px 12px; border:1px solid #c9ced6; border-radius:10px; background:#fff; }
+    width:100%; font-size:16px; padding:10px 12px; border:1px solid #c9ced6; border-radius:10px; background:#fff; min-height:44px; }
   .two { display:flex; gap:10px; } .two > div { flex:1; min-width:0; }
-  .btn { border:0; border-radius:12px; padding:12px 16px; font-size:16px; font-weight:600;
+  .btn { border:0; border-radius:12px; padding:12px 16px; font-size:16px; font-weight:600; min-height:44px;
          background:var(--c); color:var(--cfg); cursor:pointer; }
   .btn.wide { width:100%; }
   .btn.ghost { background:#fff; color:var(--ink); border:1px solid #c9ced6; font-weight:500; }
   .btn.small { padding:8px 12px; font-size:14px; border-radius:10px; }
   .btn:disabled { opacity:.5; }
   .seg { display:flex; background:var(--soft); border-radius:12px; padding:3px; gap:3px; }
-  .seg button { flex:1; border:0; background:none; padding:9px 6px; border-radius:10px; font-size:15px; cursor:pointer; }
+  .seg button { flex:1; border:0; background:none; padding:9px 6px; border-radius:10px; font-size:15px; cursor:pointer; min-height:40px; }
   .seg button[aria-pressed=true] { background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.12); font-weight:600; }
   .err { color:#b10202; font-size:14px; margin-top:8px; }
   .center { text-align:center; padding:40px 16px; color:var(--quiet); }
+
+  /* builder: parts and questions */
+  .part { border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:10px; background:#fbfcfd; }
+  .part .ph { display:flex; align-items:center; gap:8px; }
+  .part .ph b { flex:1; }
+  .x { border:0; background:none; color:var(--roseInk); font-size:14px; cursor:pointer; min-height:44px; padding:0 6px; }
+  .tog { display:flex; align-items:center; gap:10px; min-height:44px; font-size:15px; cursor:pointer; }
+  .tog input { width:22px; height:22px; flex:none; accent-color:var(--c); }
+  .tog small { color:var(--quiet); font-size:13px; }
+  .togs { display:flex; flex-wrap:wrap; column-gap:18px; }
+  .qrow { border-top:1px solid var(--line); padding-top:2px; }
+  .qrow:first-of-type { border-top:0; }
+  .qrow .sub { padding-left:32px; margin-top:-8px; }
 
   /* event list */
   .ev { display:flex; gap:12px; align-items:center; width:100%; text-align:left; background:#fff; border:1px solid var(--line);
@@ -67,7 +81,7 @@
   .link { display:flex; gap:8px; align-items:center; margin-top:6px; }
   .link code { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px;
                background:var(--soft); padding:10px; border-radius:8px; }
-  details.card summary { font-weight:600; cursor:pointer; }
+  details.card summary { font-weight:600; cursor:pointer; min-height:28px; }
   details.card .row { margin-top:12px; }
 
   /* stats + search */
@@ -76,9 +90,13 @@
   .stat b { display:block; font-size:20px; } .stat span { font-size:12px; color:var(--quiet); }
   .stat.rose { background:var(--rose); border-color:#efb7c0; }
   .sticky { position:sticky; top:0; z-index:3; background:var(--soft); padding:8px 0; }
+  .now { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .now label { font-size:13px; font-weight:600; color:var(--quiet); white-space:nowrap; }
+  .now select { font-weight:600; border-color:var(--c); border-width:2px; }
+  .partinfo { font-size:13px; color:var(--quiet); margin:-2px 2px 8px; }
   .chips { display:flex; gap:6px; overflow-x:auto; padding-top:8px; scrollbar-width:none; }
   .chips::-webkit-scrollbar { display:none; }
-  .chip { flex:none; border:1px solid #c9ced6; background:#fff; border-radius:999px; padding:6px 12px; font-size:14px; cursor:pointer; }
+  .chip { flex:none; border:1px solid #c9ced6; background:#fff; border-radius:999px; padding:6px 12px; font-size:14px; cursor:pointer; min-height:36px; }
   .chip[aria-pressed=true] { background:var(--ink); color:#fff; border-color:var(--ink); }
 
   /* people */
@@ -90,15 +108,19 @@
   .p .nm { font-weight:600; font-size:17px; }
   .p .meta { font-size:13px; color:var(--quiet); overflow-wrap:anywhere; }
   .p .tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .p .pl { font-size:13px; margin-top:8px; color:var(--ink); }
+  .p .ans { font-size:13px; margin-top:6px; color:var(--ink); overflow-wrap:anywhere; }
+  .p .ans b { font-weight:600; }
   .tag { font-size:12px; font-weight:600; padding:3px 8px; border-radius:999px; background:var(--soft); }
   .tag.no { background:#fff; color:var(--roseInk); border:1px solid #e79aa7; }
   .tag.yes { background:#e3f1ea; color:var(--ok); }
   .tag.new { background:#fff3cd; color:#7a5300; }
+  .tag.warn { background:#fff3cd; color:#7a5300; border:1px solid var(--gold); }
   .ck { flex:none; border:2px solid var(--ok); background:#fff; color:var(--ok); border-radius:12px; padding:10px 12px;
-        font-weight:700; font-size:15px; cursor:pointer; min-width:104px; }
+        font-weight:700; font-size:15px; cursor:pointer; min-width:104px; min-height:44px; }
   .ck.on { background:var(--ok); color:#fff; }
   .acts { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-  .acts button, .acts select { border:1px solid #c9ced6; background:#fff; border-radius:10px; padding:8px 10px; font-size:14px; cursor:pointer; }
+  .acts button, .acts select { border:1px solid #c9ced6; background:#fff; border-radius:10px; padding:8px 10px; font-size:14px; cursor:pointer; min-height:44px; }
   .acts select { width:auto; flex:1; min-width:150px; }
   .acts button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
   .acts button.pma { border-color:var(--roseInk); color:var(--roseInk); font-weight:600; }
@@ -109,7 +131,7 @@
            z-index:10; box-shadow:0 6px 24px rgba(0,0,0,.25); }
   .toast.show { display:flex; }
   .toast span { flex:1; font-size:15px; }
-  .toast button { background:none; border:0; color:var(--gold); font-weight:700; font-size:16px; cursor:pointer; padding:4px 6px; }
+  .toast button { background:none; border:0; color:var(--gold); font-weight:700; font-size:16px; cursor:pointer; padding:4px 6px; min-height:44px; }
   /* Buttons dip when pressed and show a spinner while waiting */
   .btn:active:not(:disabled) { transform:scale(.97); filter:brightness(.92); }
   .working { pointer-events:none; }
@@ -129,7 +151,7 @@
 <div class="toast" id="toast" role="status"><span id="toastMsg"></span><button type="button" id="undoBtn">Undo</button></div>
 
 <script>
-// The helper script in Google (hello@'s TOLE Events). 
+// The helper script in Google (hello@'s TOLE Events).
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6TvY8Xz3VGif1NBYBWbxwpvY2ImKLod5QbIAkgXsJ30aon6mCtjCpOKWPgyc7MCg/exec';
 // This page holds no roster data. Everything comes from the script, and only for a link
 // that carries the team key or an event's door key (after the #, which never reaches GitHub).
@@ -137,6 +159,15 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6TvY8Xz3VGif1NBYBW
 const CIRCLES = { 'Anchor':'#0a53a8', 'Academy':'#3d3d3d' };
 const PMA_PAY = ['Cash', 'Check', 'Precious metal'];
 const UNDO_MS = 6000;
+// The ready-made questions (the script holds the exact wording the form shows)
+const QBANK = [
+  ['with', 'Who they\'re coming with', 'Name only. Everyone still RSVPs for themselves.'],
+  ['diet', 'Dietary needs', ''],
+  ['potluck', 'What they\'re bringing to the potluck', ''],
+  ['sleep', 'Sleepover needs', ''],
+  ['access', 'Accessibility needs', '']
+];
+const MAX_PARTS = 8, MAX_CUSTOM = 3;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -144,7 +175,7 @@ const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
-// Asks the helper script to run one of its five allowed functions, through the front door
+// Asks the helper script to run one of its allowed functions, through the front door
 // (a normal GET request; the script refuses "send" requests from GitHub).
 // ok(data) on success; bad(message) if anything goes wrong, so the page always says why.
 function call(fn, args, ok, bad) {
@@ -161,6 +192,16 @@ function parseDay(s) { const p = String(s).split('-').map(Number); return new Da
 function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dayLong(s) { return parseDay(s).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }); }
 function dayShort(s) { return parseDay(s).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
+function dayMini(s) { return parseDay(s).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }); }
+// "Dec 19" or "Dec 19–20" or "Dec 31–Jan 1"
+function range(a, b) {
+  if (!b || a === b) return parseDay(a).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  const A = parseDay(a), B = parseDay(b);
+  return A.toLocaleDateString('en-US', { month:'short', day:'numeric' }) + '–' +
+    (A.getMonth() === B.getMonth() ? B.getDate() : B.toLocaleDateString('en-US', { month:'short', day:'numeric' }));
+}
+// A price that means money changes hands (not blank, "free" or "$0")
+function priced(s) { s = String(s || '').trim(); return !!s && !/^(free|0|\$?0(\.00)?)$/i.test(s); }
 function copyText(btn, text) {
   const label = btn.textContent;
   const done = ok => { btn.textContent = ok ? 'Copied' : 'Press and hold to copy'; setTimeout(() => btn.textContent = label, 2500); };
@@ -175,7 +216,7 @@ function copyText(btn, text) {
   else fallback();
 }
 
-const S = { key:'', team:false, id:'', data:null, filter:'all', q:'', pending:0, undo:null, toastTimer:null, poll:null };
+const S = { key:'', team:false, id:'', data:null, part:0, filter:'yes', q:'', pending:0, undo:null, toastTimer:null, poll:null };
 
 // ===================== Team home: all events =====================
 function openHome() {
@@ -186,14 +227,16 @@ function openHome() {
   $('app').innerHTML = '<div class="center">Loading events…</div>';
   call('listEvents', [S.key], list => {
     const today = ymd(new Date());
-    const up = list.filter(e => e.date >= today).sort((a, b) => a.date < b.date ? -1 : 1);
-    const past = list.filter(e => e.date < today).sort((a, b) => a.date < b.date ? 1 : -1);
+    const end = e => e.end || e.date;
+    const up = list.filter(e => end(e) >= today).sort((a, b) => a.date < b.date ? -1 : 1);
+    const past = list.filter(e => end(e) < today).sort((a, b) => a.date < b.date ? 1 : -1);
     const row = e => {
       const d = parseDay(e.date);
       return '<button type="button" class="ev" data-id="' + esc(e.id) + '">' +
         '<span class="d" style="background:' + (CIRCLES[e.circle] || CIRCLES.Anchor) + '"><span>' + d.toLocaleDateString('en-US', { month:'short' }) +
         '</span><b>' + d.getDate() + '</b></span><span class="t"><b>' + esc(e.name) + '</b><span>' + esc(e.circle) + ' · ' + esc(e.type) +
-        (e.time ? ' · ' + esc(e.time) : '') + '<br>' + e.rsvps + ' on the roster' + (e.here ? ' · ' + e.here + ' checked in' : '') + '</span></span></button>';
+        (e.parts > 1 ? ' · ' + e.parts + ' parts · ' + esc(range(e.date, e.end)) : (e.time ? ' · ' + esc(e.time) : '')) +
+        '<br>' + e.rsvps + ' on the roster' + (e.here ? ' · ' + e.here + ' checked in' : '') + '</span></span></button>';
     };
     $('app').innerHTML = '<button class="btn wide" type="button" id="newBtn">+ New event</button>' +
       '<div class="section">Coming up</div>' + (up.length ? up.map(row).join('') : '<div class="hint" style="padding:0 4px">Nothing scheduled yet.</div>') +
@@ -209,7 +252,9 @@ function failed(msg, retry) {
 }
 
 // ===================== New event =====================
-const N = { circle:'Anchor', type:'In person' };
+// N holds what's typed so far, so adding or removing a part never loses anything.
+const N = { circle:'Anchor', type:'In person', parts:null, q:null, custom:null };
+function blankPart(date) { return { name:'', date:date, time:'', price:'', pma:false, core:false }; }
 function renderNew() {
   setCircle(N.circle);
   $('title').textContent = 'New event';
@@ -217,79 +262,180 @@ function renderNew() {
   $('back').onclick = e => { e.preventDefault(); openHome(); };
   const me = store.get('ev-me') || {};
   const t = new Date(); t.setDate(t.getDate() + 7);
+  if (!N.parts) N.parts = [blankPart(ymd(t))];
+  if (!N.q) N.q = { with:{ on:true, core:false } };
+  if (!N.custom) N.custom = [];
   $('app').innerHTML =
+    '<form id="nForm" novalidate>' +
     '<div class="card">' +
-      '<label class="f" for="nName">Event name</label><input type="text" id="nName" maxlength="100" placeholder="Full Moon Gathering">' +
+      '<label class="f" for="nName">Event name</label><input type="text" id="nName" maxlength="100" placeholder="Winter Solstice Gathering">' +
       '<label class="f">Hosted by</label><div class="seg" id="nCircle">' + Object.keys(CIRCLES).map(c =>
         '<button type="button" data-v="' + c + '" aria-pressed="' + (c === N.circle) + '">' + c + '</button>').join('') + '</div>' +
       '<label class="f">Where</label><div class="seg" id="nType">' + ['In person', 'Online'].map(c =>
         '<button type="button" data-v="' + c + '" aria-pressed="' + (c === N.type) + '">' + c + '</button>').join('') + '</div>' +
       '<div class="hint" style="margin-top:6px">In person: signing the PMA at check-in also makes someone Nexus 4.</div>' +
-      '<div class="two"><div><label class="f" for="nDate">Date</label><input type="date" id="nDate" value="' + ymd(t) + '"></div>' +
-      '<div><label class="f" for="nTime">Time</label><input type="text" id="nTime" maxlength="60" placeholder="7–9 pm"></div></div>' +
       '<label class="f" for="nPlace">Place or Zoom <span class="hint">(optional, shown on the form)</span></label><input type="text" id="nPlace" maxlength="150">' +
-      '<label class="f" for="nPrice">Cost <span class="hint">(optional, shown on the form)</span></label><input type="text" id="nPrice" maxlength="60" placeholder="$20, cash welcome at the door">' +
     '</div>' +
+    '<div class="card"><h2>Parts</h2>' +
+      '<div class="hint">One part is a simple event: the RSVP itself means yes. With two or more parts, people answer Yes or No to each.</div>' +
+      '<div id="parts"></div>' +
+      '<button type="button" class="btn ghost wide" id="addPart" style="margin-top:10px">+ Add a part</button>' +
+      '<div class="hint" id="formNote" style="margin-top:10px"></div>' +
+    '</div>' +
+    '<div class="card"><h2>Questions on the form</h2><div class="hint">All optional for guests.</div><div id="qs"></div></div>' +
     '<div class="card"><h2>You, the organizer</h2>' +
       '<label class="f" for="nOrg">Your name</label><input type="text" id="nOrg" maxlength="60" value="' + esc(me.name || '') + '">' +
       '<label class="f" for="nOrgE">Your email</label><input type="email" id="nOrgE" maxlength="120" value="' + esc(me.email || '') + '">' +
       '<div class="hint" style="margin-top:6px">If someone RSVPs who isn\'t on the master list, you\'ll get an email to check who they are.</div>' +
     '</div>' +
-    '<button class="btn wide" type="button" id="nGo">Create the event</button><div class="err" id="nErr" role="alert"></div>';
+    '<button class="btn wide" type="submit" id="nGo">Create the event</button><div class="err" id="nErr" role="alert"></div></form>';
   const seg = (id, key) => $(id).onclick = e => { const b = e.target.closest('button'); if (!b) return;
     N[key] = b.dataset.v; $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
     if (key === 'circle') setCircle(N.circle); };
   seg('nCircle', 'circle'); seg('nType', 'type');
-  $('nGo').onclick = () => {
-    const f = { name:$('nName').value, circle:N.circle, type:N.type, date:$('nDate').value, time:$('nTime').value,
-      place:$('nPlace').value, price:$('nPrice').value, organizer:$('nOrg').value, orgEmail:$('nOrgE').value };
-    store.set('ev-me', { name:f.organizer.trim(), email:f.orgEmail.trim() });
-    $('nGo').disabled = true; $('nGo').textContent = 'Making the form and roster…'; $('nErr').textContent = '';
-    call('createEvent', [S.key, f], d => {
-      S.data = d; S.id = d.event.id;
-      history.replaceState(null, '', '#e-' + d.event.id + '-' + S.key);
-      renderEvent(true);
-    }, msg => { $('nGo').disabled = false; $('nGo').textContent = 'Create the event'; $('nErr').textContent = msg; });
+  $('addPart').onclick = () => {
+    if (N.parts.length >= MAX_PARTS) return;
+    N.parts.push(blankPart(N.parts[N.parts.length - 1].date)); drawParts();
+    const names = $('parts').querySelectorAll('[data-k=name]'); names[names.length - 1].focus();
   };
+  drawParts();
+  $('nForm').onsubmit = ev => {
+    ev.preventDefault();
+    const f = { name:$('nName').value, circle:N.circle, type:N.type, place:$('nPlace').value,
+      organizer:$('nOrg').value, orgEmail:$('nOrgE').value,
+      parts:N.parts.map(p => ({ name:p.name, date:p.date, time:p.time, price:p.price, pma:p.pma, core:p.core })),
+      questions:QBANK.filter(q => N.q[q[0]] && N.q[q[0]].on).map(q => ({ key:q[0], core:!!N.q[q[0]].core }))
+        .concat(N.custom.filter(c => c.title.trim()).map(c => ({ key:'custom', title:c.title, core:!!c.core }))) };
+    store.set('ev-me', { name:f.organizer.trim(), email:f.orgEmail.trim() });
+    $('nGo').disabled = true; $('nGo').classList.add('working'); $('nGo').textContent = 'Making the forms and roster…'; $('nErr').textContent = '';
+    call('createEvent', [S.key, f], d => {
+      N.parts = N.q = N.custom = null;              // start fresh next time
+      S.data = d; S.id = d.event.id; S.part = 0; S.filter = 'yes';
+      history.replaceState(null, '', '#e-' + d.event.id + '-' + S.key);
+      renderEvent(true); startPoll();
+    }, msg => { $('nGo').disabled = false; $('nGo').classList.remove('working'); $('nGo').textContent = 'Create the event'; $('nErr').textContent = msg; });
+  };
+}
+
+function drawParts() {
+  const many = N.parts.length > 1;
+  $('parts').innerHTML = N.parts.map((p, i) =>
+    '<div class="part" data-i="' + i + '">' +
+      (many ? '<div class="ph"><b>Part ' + (i + 1) + '</b><button type="button" class="x" data-rm="' + i + '">Remove</button></div>' : '') +
+      '<label class="f" for="pn' + i + '">' + (many ? 'Name' : 'Name <span class="hint">(optional: leave blank for a simple event)</span>') + '</label>' +
+      '<input type="text" id="pn' + i + '" data-k="name" maxlength="60" placeholder="' + (many ? 'Open House' : 'Same as the event') + '" value="' + esc(p.name) + '">' +
+      '<div class="two"><div><label class="f" for="pd' + i + '">Date</label><input type="date" id="pd' + i + '" data-k="date" value="' + esc(p.date) + '"></div>' +
+      '<div><label class="f" for="pt' + i + '">Time</label><input type="text" id="pt' + i + '" data-k="time" maxlength="60" placeholder="4–7 pm" value="' + esc(p.time) + '"></div></div>' +
+      '<label class="f" for="pp' + i + '">Cost <span class="hint">(blank or "free" if none)</span></label>' +
+      '<input type="text" id="pp' + i + '" data-k="price" maxlength="60" placeholder="$10, cash welcome" value="' + esc(p.price) + '">' +
+      '<div class="togs">' +
+        '<label class="tog"><input type="checkbox" data-k="pma"' + (p.pma ? ' checked' : '') + '> PMA required</label>' +
+        '<label class="tog"><input type="checkbox" data-k="core"' + (p.core ? ' checked' : '') + '> Core only</label>' +
+      '</div>' +
+    '</div>').join('');
+  $('addPart').style.display = N.parts.length >= MAX_PARTS ? 'none' : '';
+  $('parts').querySelectorAll('[data-k]').forEach(el => {
+    const p = N.parts[Number(el.closest('.part').dataset.i)], k = el.dataset.k;
+    if (el.type === 'checkbox') el.onchange = () => { p[k] = el.checked; if (k === 'core') { formNote(); drawQs(); } };
+    else el.oninput = () => { p[k] = el.value; };
+  });
+  $('parts').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { N.parts.splice(Number(b.dataset.rm), 1); drawParts(); });
+  formNote(); drawQs();
+}
+
+// Says which forms will be made, so nobody is surprised
+function formNote() {
+  const core = N.parts.some(p => p.core), open = N.parts.some(p => !p.core);
+  $('formNote').textContent = core && open
+    ? 'Two forms: an RSVP form with only the parts open to everyone, and a Core RSVP form with every part. Both fill one roster. Guests never see the word "Core".'
+    : core ? 'Every part is Core only, so there\'s one form: the Core RSVP form.'
+    : 'One RSVP form for everyone.';
+}
+
+function drawQs() {
+  const core = N.parts.some(p => p.core);
+  const coreBox = (on, attr) => core ? '<div class="sub"><label class="tog"><input type="checkbox" ' + attr + (on ? ' checked' : '') +
+    '> <small>Core form only</small></label></div>' : '';
+  $('qs').innerHTML = QBANK.map(q => { const s = N.q[q[0]] || {};
+      return '<div class="qrow"><label class="tog"><input type="checkbox" data-q="' + q[0] + '"' + (s.on ? ' checked' : '') + '> <span>' + esc(q[1]) +
+        (q[2] ? '<br><small>' + esc(q[2]) + '</small>' : '') + '</span></label>' + (s.on ? coreBox(s.core, 'data-qc="' + q[0] + '"') : '') + '</div>'; }).join('') +
+    N.custom.map((c, i) => '<div class="qrow"><label class="f" for="cq' + i + '">Your own question ' + (i + 1) + '</label>' +
+      '<div class="two"><div style="flex:4"><input type="text" id="cq' + i + '" data-c="' + i + '" maxlength="120" value="' + esc(c.title) + '"></div>' +
+      '<div style="flex:none"><button type="button" class="x" data-crm="' + i + '">Remove</button></div></div>' +
+      coreBox(c.core, 'data-cc="' + i + '"') + '</div>').join('') +
+    (N.custom.length < MAX_CUSTOM ? '<button type="button" class="btn ghost wide" id="addQ" style="margin-top:10px">+ Add your own question</button>' : '');
+  $('qs').querySelectorAll('[data-q]').forEach(el => el.onchange = () => {
+    const k = el.dataset.q; N.q[k] = N.q[k] || {}; N.q[k].on = el.checked; drawQs(); });
+  $('qs').querySelectorAll('[data-qc]').forEach(el => el.onchange = () => { N.q[el.dataset.qc].core = el.checked; });
+  $('qs').querySelectorAll('[data-c]').forEach(el => el.oninput = () => { N.custom[Number(el.dataset.c)].title = el.value; });
+  $('qs').querySelectorAll('[data-cc]').forEach(el => el.onchange = () => { N.custom[Number(el.dataset.cc)].core = el.checked; });
+  $('qs').querySelectorAll('[data-crm]').forEach(el => el.onclick = () => { N.custom.splice(Number(el.dataset.crm), 1); drawQs(); });
+  const add = $('addQ');
+  if (add) add.onclick = () => { N.custom.push({ title:'', core:false }); drawQs(); $('cq' + (N.custom.length - 1)).focus(); };
 }
 
 // ===================== One event: check-in =====================
 function openEvent(id, key) {
-  S.id = id; S.key = key;
+  S.id = id; S.key = key; S.filter = 'yes';
   $('app').innerHTML = '<div class="center">Opening the roster…</div>';
-  call('getRoster', [id, key], d => { S.data = d; S.team = d.team; renderEvent(false); startPoll(); },
+  call('getRoster', [id, key], d => { S.data = d; S.team = d.team; S.part = pickPart(d); renderEvent(false); startPoll(); },
     msg => failed(msg, () => openEvent(id, key)));
 }
+
+// Which part to show first: the one last picked on this phone, else today's, else the first
+function pickPart(d) {
+  const P = d.event.parts, saved = store.get('ev-part-' + d.event.id);
+  if (saved != null && saved >= 0 && saved < P.length) return saved;
+  const today = ymd(new Date());
+  const i = P.findIndex(p => p.date === today);
+  return i === -1 ? 0 : i;
+}
+const curPart = () => S.data.event.parts[S.part] || S.data.event.parts[0];
+const multi = () => S.data.event.parts.length > 1;
 
 function renderEvent(justMade) {
   const d = S.data, e = d.event;
   setCircle(e.circle);
   $('kick').textContent = e.circle + ' · ' + e.type;
   $('title').textContent = e.name;
-  $('sub').innerHTML = esc(dayLong(e.date) + (e.time ? ', ' + e.time : '') + (e.place ? ' · ' + e.place : '')) +
+  const when = e.parts.length > 1 ? (e.end && e.end !== e.date ? dayLong(e.date) + ' to ' + dayLong(e.end) : dayLong(e.date))
+    : dayLong(e.date) + (e.time ? ', ' + e.time : '');
+  $('sub').innerHTML = esc(when + (e.place ? ' · ' + e.place : '')) +
     (d.team ? '<br><a href="#" id="back">‹ All events</a>' : '');
   if (d.team) $('back').onclick = ev => { ev.preventDefault(); go('t-' + S.key); };
 
   let h = '';
   if (d.team && d.links) {
     const L = d.links;
+    const linkRow = (title, hint, url, ghost) => '<div class="row"><b>' + title + '</b><div class="hint">' + hint + '</div>' +
+      '<div class="link"><code>' + esc(url) + '</code><button class="btn small' + (ghost ? ' ghost' : '') + '" type="button" data-copy="' + esc(url) + '">Copy</button></div></div>';
     h += '<details class="card"' + (justMade ? ' open' : '') + '><summary>' + (justMade ? 'Your event is ready. Here are its links' : 'Links for this event') + '</summary>' +
-      '<div class="row"><b>RSVP form</b><div class="hint">Send this to the people you\'re inviting.</div>' +
-        '<div class="link"><code>' + esc(L.rsvp) + '</code><button class="btn small" type="button" data-copy="' + esc(L.rsvp) + '">Copy</button></div></div>' +
-      '<div class="row"><b>Door link</b><div class="hint">For a volunteer checking people in. It opens only this event.</div>' +
-        '<div class="link"><code>' + esc(L.door) + '</code><button class="btn small ghost" type="button" data-copy="' + esc(L.door) + '">Copy</button></div></div>' +
-      '<div class="row"><a href="' + esc(L.sheet) + '" target="_blank" rel="noopener">Open the roster sheet</a> &nbsp;·&nbsp; ' +
-        '<a href="' + esc(L.form) + '" target="_blank" rel="noopener">Edit the form</a></div></details>';
+      (L.rsvp ? linkRow('RSVP form' + (L.coreRsvp ? ' (open to everyone)' : ''), L.coreRsvp ? 'Only the parts open to everyone. Send this to the wider invite list.' : 'Send this to the people you\'re inviting.', L.rsvp) : '') +
+      (L.coreRsvp ? linkRow('Core RSVP form', 'Every part, including Core only. Send this only to the Core group.', L.coreRsvp) : '') +
+      linkRow('Door link', 'For a volunteer checking people in. It opens only this event.', L.door, true) +
+      '<div class="row"><a href="' + esc(L.sheet) + '" target="_blank" rel="noopener">Open the roster sheet</a>' +
+        (L.form ? ' &nbsp;·&nbsp; <a href="' + esc(L.form) + '" target="_blank" rel="noopener">Edit the ' + (L.coreForm ? 'RSVP ' : '') + 'form</a>' : '') +
+        (L.coreForm ? ' &nbsp;·&nbsp; <a href="' + esc(L.coreForm) + '" target="_blank" rel="noopener">Edit the Core form</a>' : '') +
+        (e.legacy ? '' : '<div class="hint" style="margin-top:6px">Editing a form: change wording freely, but don\'t rename the part questions. That\'s how answers find their column.</div>') +
+      '</div></details>';
   }
   // Team only, once the event has started: the after-event report and follow-up checklist
   if (d.team && (e.isPast || e.isToday)) h += '<div class="card"><button class="btn ghost wide" type="button" id="repBtn">📋 Follow-up report</button>' +
-    '<div class="hint" id="repMsg" style="margin-top:8px">Who came, who didn\'t, PMA and payments, and the follow-up checklist. It also goes to anchor@ and academy@ the morning after.</div></div>';
-  h += '<div id="stats"></div><div class="sticky"><input type="search" id="q" placeholder="Search names" autocomplete="off" value="' + esc(S.q) + '">' +
+    '<div class="hint" id="repMsg" style="margin-top:8px">Who came to each part, who didn\'t, PMA and payments, and the follow-up checklist. It also goes to anchor@ and academy@ the morning after.</div></div>';
+  h += '<div class="sticky">' +
+    (multi() ? '<div class="now"><label for="partSel">Now checking in</label><select id="partSel">' +
+      e.parts.map((p, i) => '<option value="' + i + '"' + (i === S.part ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') +
+      '</select></div><div class="partinfo" id="partInfo"></div>' : '') +
+    '<div id="stats"></div><input type="search" id="q" placeholder="Search names" autocomplete="off" value="' + esc(S.q) + '">' +
     '<div class="chips" id="chips"></div></div><div id="list"></div>' +
     '<button class="btn ghost wide" type="button" id="walkBtn" style="margin-top:6px">+ Add someone at the door</button><div id="walk"></div>';
   $('app').innerHTML = h;
   $('app').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copyText(b, b.dataset.copy));
   $('q').oninput = () => { S.q = $('q').value; drawList(); };
+  if ($('partSel')) $('partSel').onchange = () => {
+    S.part = Number($('partSel').value); store.set('ev-part-' + e.id, S.part);
+    $('walk').innerHTML = ''; $('walkBtn').style.display = ''; drawList();
+  };
   $('walkBtn').onclick = renderWalkIn;
   const rb = $('repBtn');
   if (rb) rb.onclick = () => {
@@ -308,33 +454,49 @@ function renderEvent(justMade) {
   drawList();
 }
 
+// This person's answer for the part being checked in
+const pp = p => p.parts[S.part] || { ans:'', paid:'', here:'' };
+const isYes = p => { const x = pp(p); return x.ans === 'Yes' || x.ans === 'Walk-in' || !!x.here; };
+
 function counts() {
-  const p = S.data.people;
-  return { all:p.length, here:p.filter(x => x.checkin).length, paid:p.filter(x => x.paid).length,
-           nopma:p.filter(x => !x.pma).length, notyet:p.filter(x => !x.checkin).length, isnew:p.filter(x => x.isNew).length };
+  const all = S.data.people, yes = all.filter(isYes), part = curPart();
+  return { yes:yes.length, here:all.filter(p => pp(p).here).length, paid:all.filter(p => pp(p).paid).length,
+           nopma:yes.filter(p => !p.pma).length, isnew:all.filter(p => p.isNew).length,
+           no:all.filter(p => pp(p).ans === 'No').length, flag:all.filter(p => p.notCore.length).length,
+           showPaid:S.data.event.legacy || priced(part.price) };
 }
 
 function drawList() {
-  const c = counts();
+  const c = counts(), part = curPart(), legacy = S.data.event.legacy;
+  if ($('partInfo')) $('partInfo').textContent = [dayMini(part.date), part.time, part.price, part.pma ? 'PMA required' : '', part.core ? 'Core only' : '']
+    .filter(Boolean).join(' · ');
+  const roseOn = c.nopma && (legacy || part.pma);
   $('stats').innerHTML = '<div class="stats">' +
-    '<div class="stat"><b>' + c.all + '</b><span>on roster</span></div>' +
+    '<div class="stat"><b>' + c.yes + '</b><span>' + (legacy ? 'on roster' : 'coming') + '</span></div>' +
     '<div class="stat"><b>' + c.here + '</b><span>here</span></div>' +
-    '<div class="stat"><b>' + c.paid + '</b><span>paid</span></div>' +
-    '<div class="stat' + (c.nopma ? ' rose' : '') + '"><b>' + c.nopma + '</b><span>no PMA</span></div></div>';
-  const F = [['all', 'Everyone'], ['notyet', 'Not here yet'], ['nopma', 'No PMA'], ['unpaid', 'Not paid']];
+    (c.showPaid ? '<div class="stat"><b>' + c.paid + '</b><span>paid</span></div>' : '<div class="stat"><b>' + c.no + '</b><span>said no</span></div>') +
+    '<div class="stat' + (roseOn ? ' rose' : '') + '"><b>' + c.nopma + '</b><span>no PMA</span></div></div>';
+  const F = [['yes', legacy ? 'Everyone' : 'Coming'], ['notyet', 'Not here yet'], ['nopma', 'No PMA']];
+  if (c.showPaid) F.push(['unpaid', 'Not paid']);
+  if (!legacy) F.push(['no', 'Said no'], ['all', 'Whole roster']);
+  if (c.flag) F.push(['flag', 'Not Core']);
   if (c.isnew) F.push(['isnew', 'New']);
+  if (!F.some(f => f[0] === S.filter)) S.filter = 'yes';
   $('chips').innerHTML = F.map(f => '<button type="button" class="chip" data-f="' + f[0] + '" aria-pressed="' + (S.filter === f[0]) + '">' + f[1] + '</button>').join('');
   $('chips').onclick = e => { const b = e.target.closest('.chip'); if (!b) return; S.filter = b.dataset.f; drawList(); };
 
   const q = S.q.trim().toLowerCase();
+  const keep = {
+    yes:isYes, all:() => true, notyet:p => isYes(p) && !pp(p).here, nopma:p => isYes(p) && !p.pma,
+    unpaid:p => isYes(p) && !pp(p).paid, no:p => pp(p).ans === 'No' && !pp(p).here, flag:p => p.notCore.length, isnew:p => p.isNew
+  }[S.filter] || isYes;
   const list = S.data.people
     .filter(p => !q || (p.first + ' ' + p.last + ' ' + p.email).toLowerCase().indexOf(q) !== -1)
-    .filter(p => S.filter === 'all' || (S.filter === 'notyet' && !p.checkin) || (S.filter === 'nopma' && !p.pma) ||
-                 (S.filter === 'unpaid' && !p.paid) || (S.filter === 'isnew' && p.isNew))
+    .filter(keep)
     .sort((a, b) => (a.first + a.last).toLowerCase() < (b.first + b.last).toLowerCase() ? -1 : 1);
 
   if (!S.data.people.length) { $('list').innerHTML = '<div class="card center" style="padding:24px">No RSVPs yet. Share the RSVP form link and they\'ll appear here.</div>'; return; }
-  if (!list.length) { $('list').innerHTML = '<div class="hint" style="padding:8px 4px">Nobody matches.</div>'; return; }
+  if (!list.length) { $('list').innerHTML = '<div class="hint" style="padding:8px 4px">Nobody matches. ' + (q ? 'Try "Whole roster", or add them at the door below.' : '') + '</div>'; return; }
   $('list').innerHTML = list.map(card).join('');
   $('list').querySelectorAll('[data-a]').forEach(el => {
     const ev = el.tagName === 'SELECT' ? 'onchange' : 'onclick';
@@ -343,36 +505,49 @@ function drawList() {
 }
 
 function card(p) {
+  const e = S.data.event, part = curPart(), x = pp(p), legacy = e.legacy;
+  const needPma = legacy || part.pma;
   const tags = [];
+  if (!legacy && multi()) tags.push(x.ans === 'Yes' ? '<span class="tag yes">Said yes</span>' : x.ans === 'No' ? '<span class="tag no">Said no</span>'
+    : x.ans === 'Walk-in' ? '<span class="tag new">Walk-in</span>' : '<span class="tag">No answer for this part</span>');
   tags.push(p.pma ? '<span class="tag yes">PMA signed' + (p.pmaDate ? ' ' + esc(dayShort(p.pmaDate)) : '') + '</span>'
-                  : '<span class="tag no">No PMA</span>');
+                  : '<span class="tag' + (needPma ? ' no' : '') + '">No PMA</span>');
   tags.push(p.community ? '<span class="tag yes">In community</span>' : '<span class="tag">Not in community</span>');
   if (p.nexus) tags.push('<span class="tag">' + esc(p.nexus) + '</span>');
+  if (p.notCore.length) tags.push('<span class="tag warn">Not Core: said yes to ' + esc(p.notCore.join(', ')) + '</span>');
   if (p.isNew) tags.push('<span class="tag new">New: check who this is</span>');
   if (!p.onList) tags.push('<span class="tag new">Not on master list</span>');
-  return '<div class="p' + (p.pma ? '' : ' nopma') + '" data-email="' + esc(p.email) + '">' +
+  // Every part at a glance: ✓ yes, ✗ no, – no answer
+  const glance = !legacy && multi() ? '<div class="pl">' + e.parts.map((pt, i) => {
+    const a = p.parts[i] || {};
+    const mark = a.here ? '✓ here' : a.ans === 'Yes' ? '✓' : a.ans === 'No' ? '✗' : a.ans === 'Walk-in' ? '✓' : '–';
+    return (i === S.part ? '<b>' : '') + esc(pt.name) + ' ' + mark + (i === S.part ? '</b>' : '');
+  }).join(' · ') + '</div>' : '';
+  const answers = p.answers.length ? '<div class="ans">' + p.answers.map(a => '<b>' + esc(a.t.replace(/\?.*$/, '').replace(/ \(name only\)/, '')) + ':</b> ' + esc(a.v)).join('<br>') + '</div>' : '';
+  const showPaid = legacy || priced(part.price);
+  return '<div class="p' + (!p.pma && needPma ? ' nopma' : '') + '" data-email="' + esc(p.email) + '">' +
     '<div class="top"><div class="who"><div class="nm">' + esc(p.first + ' ' + p.last) + '</div>' +
       '<div class="meta">' + esc(p.email) + (p.phone ? ' · ' + esc(p.phone) : '') + (p.rsvp ? ' · ' + esc(p.rsvp) : '') + '</div></div>' +
-      '<button type="button" class="ck' + (p.checkin ? ' on' : '') + '" data-a="checkin">' + (p.checkin ? '✓ Here ' + esc(p.checkin) : 'Check in') + '</button></div>' +
-    '<div class="tags">' + tags.join('') + '</div>' +
+      '<button type="button" class="ck' + (x.here ? ' on' : '') + '" data-a="checkin">' + (x.here ? '✓ Here ' + esc(x.here) : 'Check in') + '</button></div>' +
+    '<div class="tags">' + tags.join('') + '</div>' + glance + answers +
     '<div class="acts">' +
-      '<button type="button" data-a="paid" class="' + (p.paid ? 'on' : '') + '">' + (p.paid ? '✓ ' + esc(p.paid) : 'Paid') + '</button>' +
+      (showPaid ? '<button type="button" data-a="paid" class="' + (x.paid ? 'on' : '') + '">' + (x.paid ? '✓ ' + esc(x.paid) : 'Paid' + (part.price && !legacy ? ' ' + esc(part.price) : '')) + '</button>' : '') +
       (p.pma ? '' : '<button type="button" class="pma" data-a="pma">Signed PMA today</button>') +
       '<select data-a="pmaPay" aria-label="PMA payment"><option value="">' + (p.pmaPay ? 'Clear PMA payment' : 'PMA payment…') + '</option>' +
-        PMA_PAY.map(x => '<option' + (p.pmaPay === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>' +
+        PMA_PAY.map(v => '<option' + (p.pmaPay === v ? ' selected' : '') + '>' + v + '</option>').join('') + '</select>' +
     '</div></div>';
 }
 
 function tap(email, action, el) {
   const p = S.data.people.filter(x => x.email === email)[0]; if (!p) return;
-  const name = p.first || p.email;
+  const name = p.first || p.email, x = pp(p), where = multi() ? ' (' + curPart().name + ')' : '';
   let value = null, msg = '';
-  if (action === 'checkin') { value = !p.checkin; msg = value ? name + ' is checked in.' : name + ' is no longer checked in.'; }
-  if (action === 'paid') { value = !p.paid; msg = value ? name + ' is marked paid.' : name + ' is marked not paid.'; }
+  if (action === 'checkin') { value = !x.here; msg = value ? name + ' is checked in' + where + '.' : name + ' is no longer checked in' + where + '.'; }
+  if (action === 'paid') { value = !x.paid; msg = value ? name + ' is marked paid' + where + '.' : name + ' is marked not paid' + where + '.'; }
   if (action === 'pma') { msg = name + ' signed the PMA today.'; }
   if (action === 'pmaPay') { value = el.value; msg = value ? name + '\'s PMA payment: ' + value + '.' : name + '\'s PMA payment cleared.'; }
   const box = el.closest('.p'); box.classList.add('busy'); S.pending++;
-  call('act', [S.id, S.key, email, action, value], r => {
+  call('act', [S.id, S.key, email, action, value, S.part], r => {
     S.pending--; S.data.people = r.people; drawList();
     showToast(msg, { email:email, prev:r.prev, name:name });
   }, err => { S.pending--; box.classList.remove('busy'); showToast(err, null); drawList(); });
@@ -391,7 +566,7 @@ $('undoBtn').onclick = () => {
   clearTimeout(S.toastTimer); S.undo = null;
   $('toastMsg').textContent = 'Undoing…'; $('undoBtn').style.display = 'none';
   S.pending++;
-  call('act', [S.id, S.key, u.email, 'restore', u.prev], r => {
+  call('act', [S.id, S.key, u.email, 'restore', u.prev, u.prev && u.prev.part], r => {
     S.pending--; S.data.people = r.people; drawList(); showToast('Undone for ' + u.name + '.', null);
   }, err => { S.pending--; showToast(err, null); });
 };
@@ -399,23 +574,26 @@ $('undoBtn').onclick = () => {
 // ---------- Walk-ins ----------
 function renderWalkIn() {
   $('walkBtn').style.display = 'none';
-  $('walk').innerHTML = '<div class="card"><h2>Add someone at the door</h2>' +
+  const where = multi() ? ' to ' + esc(curPart().name) : '';
+  $('walk').innerHTML = '<form class="card" id="wForm" novalidate><h2>Add someone at the door</h2>' +
     '<div class="two"><div><label class="f" for="wF">First name</label><input type="text" id="wF" maxlength="60"></div>' +
     '<div><label class="f" for="wL">Last name</label><input type="text" id="wL" maxlength="60"></div></div>' +
     '<label class="f" for="wE">Email</label><input type="email" id="wE" maxlength="120" autocomplete="off">' +
     '<label class="f" for="wP">Phone</label><input type="tel" id="wP" maxlength="40">' +
-    '<div class="hint" style="margin-top:6px">They\'re checked in right away. If they\'re not on the master list, they\'re added and the organizer gets a note to follow up.</div>' +
+    '<div class="hint" style="margin-top:6px">They\'re checked in' + where + ' right away. Already on the roster? Find them with "Whole roster" and tap Check in instead. ' +
+    'If they\'re not on the master list, they\'re added and the organizer gets a note to follow up.</div>' +
     '<div class="two" style="margin-top:12px"><div><button class="btn ghost wide" type="button" id="wX">Cancel</button></div>' +
-    '<div><button class="btn wide" type="button" id="wGo">Add & check in</button></div></div><div class="err" id="wErr" role="alert"></div></div>';
+    '<div><button class="btn wide" type="submit" id="wGo">Add & check in</button></div></div><div class="err" id="wErr" role="alert"></div></form>';
   $('wF').focus();
   $('wX').onclick = () => { $('walk').innerHTML = ''; $('walkBtn').style.display = ''; };
-  $('wGo').onclick = () => {
+  $('wForm').onsubmit = ev => {
+    ev.preventDefault();
     const f = { first:$('wF').value, last:$('wL').value, email:$('wE').value, phone:$('wP').value };
-    $('wGo').disabled = true; $('wErr').textContent = ''; S.pending++;
-    call('addWalkIn', [S.id, S.key, f], people => {
+    $('wGo').disabled = true; $('wGo').classList.add('working'); $('wErr').textContent = ''; S.pending++;
+    call('addWalkIn', [S.id, S.key, f, S.part], people => {
       S.pending--; S.data.people = people; $('walk').innerHTML = ''; $('walkBtn').style.display = '';
       drawList(); showToast((f.first || 'They') + ' is added and checked in.', null);
-    }, msg => { S.pending--; $('wGo').disabled = false; $('wErr').textContent = msg; });
+    }, msg => { S.pending--; $('wGo').disabled = false; $('wGo').classList.remove('working'); $('wErr').textContent = msg; });
   };
 }
 
@@ -435,6 +613,7 @@ function stopPoll() { if (S.poll) clearInterval(S.poll); S.poll = null; }
 // The part after # says what to show: t-<team key> = all events; e-<event>-<key> = one roster.
 function go(hash) { if (location.hash === '#' + hash) route(hash); else location.hash = hash; }   // hashchange runs route
 function route(h) {
+  clearTimeout(S.toastTimer); $('toast').classList.remove('show'); S.undo = null;   // no leftover messages on a new screen
   h = decodeURIComponent(String(h || '')).replace(/^#/, '').trim();
   let m;
   if ((m = h.match(/^t-([A-Za-z]{20})$/))) { S.key = m[1]; S.team = true; openHome(); return; }
