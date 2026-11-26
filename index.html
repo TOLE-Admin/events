@@ -22,7 +22,7 @@
 <meta name="theme-color" content="#0a53a8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&display=swap" rel="stylesheet">
-<!-- Events page v3 (Nov 23, 2026): events with parts. Needs the Events script v3. -->
+<!-- Events page v3.2 (Nov 26, 2026): edit events, live preview, Congregation / Core form names. Needs the Events script v3.2. -->
 <style>
   :root { --ink:#1b2333; --quiet:#5f6368; --line:#e3e6ea; --bg:#ffffff; --soft:#f4f6f9;
           --c:#0a53a8; --cfg:#ffffff; --rose:#f8d7dc; --roseInk:#8a1c2c; --ok:#11734b; --gold:#E69B36; }
@@ -64,10 +64,16 @@
   .tog { display:flex; align-items:center; gap:10px; min-height:44px; font-size:15px; cursor:pointer; }
   .tog input { width:22px; height:22px; flex:none; accent-color:var(--c); }
   .tog small { color:var(--quiet); font-size:13px; }
+  .tog.off { color:#a3a8b0; cursor:not-allowed; }   /* greyed out: the other box is ticked */
   .togs { display:flex; flex-wrap:wrap; column-gap:18px; }
   .qrow { border-top:1px solid var(--line); padding-top:2px; }
   .qrow:first-of-type { border-top:0; }
   .qrow .sub { padding-left:32px; margin-top:-8px; }
+  .preview { border:2px dashed var(--c); }
+  .pv { margin-top:12px; } .pv + .pv { border-top:1px solid var(--line); padding-top:12px; }
+  .pvh { font-weight:700; color:var(--c); }
+  .pvt { font-family:"EB Garamond", Georgia, serif; font-size:19px; font-weight:600; margin-top:6px; }
+  .pv ol { margin:6px 0 4px; padding-left:22px; font-size:15px; } .pv li { margin:3px 0; }
 
   /* event list */
   .ev { display:flex; gap:12px; align-items:center; width:100%; text-align:left; background:#fff; border:1px solid var(--line);
@@ -161,13 +167,16 @@ const PMA_PAY = ['Cash', 'Check', 'Precious metal'];
 const UNDO_MS = 6000;
 // The ready-made questions (the script holds the exact wording the form shows)
 const QBANK = [
-  ['with', 'Who they\'re coming with', 'Name only. Everyone still RSVPs for themselves.'],
+  ['with', 'Are you bringing a guest?', 'They give the guest\'s name. The guest still RSVPs for themselves.'],
   ['diet', 'Dietary needs', ''],
   ['potluck', 'What they\'re bringing to the potluck', ''],
   ['sleep', 'Sleepover needs', ''],
   ['access', 'Accessibility needs', '']
 ];
 const MAX_PARTS = 8, MAX_CUSTOM = 3;
+// What each ready-made question says on the form (for the preview)
+const QTITLE = { with:'Are you bringing a guest?', diet:'Dietary needs', potluck:'What are you bringing to the potluck?',
+                 sleep:'Sleepover needs', access:'Accessibility needs' };
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -241,7 +250,7 @@ function openHome() {
     $('app').innerHTML = '<button class="btn wide" type="button" id="newBtn">+ New event</button>' +
       '<div class="section">Coming up</div>' + (up.length ? up.map(row).join('') : '<div class="hint" style="padding:0 4px">Nothing scheduled yet.</div>') +
       (past.length ? '<div class="section">Past</div>' + past.map(row).join('') : '');
-    $('newBtn').onclick = renderNew;
+    $('newBtn').onclick = () => renderNew(null);
     $('app').querySelectorAll('.ev').forEach(b => b.onclick = () => go('e-' + b.dataset.id + '-' + S.key));
   }, msg => { failed(msg, openHome); });
 }
@@ -251,30 +260,49 @@ function failed(msg, retry) {
   $('retry').onclick = retry;
 }
 
-// ===================== New event =====================
+// ===================== New event / Edit event =====================
 // N holds what's typed so far, so adding or removing a part never loses anything.
-const N = { circle:'Anchor', type:'In person', parts:null, q:null, custom:null };
+// ed = the event being edited (null for a new event). Parts and questions that came from the
+// saved event carry idx, so the script knows which is which.
+const N = { circle:'Anchor', type:'In person', parts:null, q:null, custom:null, ed:null };
 function blankPart(date) { return { name:'', date:date, time:'', price:'', pma:false, core:false }; }
-function renderNew() {
-  setCircle(N.circle);
-  $('title').textContent = 'New event';
-  $('sub').innerHTML = '<a href="#" id="back">‹ All events</a>';
-  $('back').onclick = e => { e.preventDefault(); openHome(); };
+function renderNew(ed) {
+  ed = ed || null;
+  if (ed !== N.ed) { N.parts = N.q = N.custom = null; N.ed = ed; }
   const me = store.get('ev-me') || {};
   const t = new Date(); t.setDate(t.getDate() + 7);
+  if (ed) {
+    const e = ed.event;
+    N.circle = e.circle; N.type = e.type;
+    if (!N.parts) N.parts = e.parts.map((p, i) => ({ idx:i, name:p.name, date:p.date, time:p.time, price:p.price, pma:p.pma, core:p.core, gone:p.gone }))
+      .filter(p => !p.gone);
+    if (!N.q) { N.q = {}; N.custom = [];
+      e.questions.forEach((q, i) => { if (q.gone) return;
+        if (q.key === 'custom') N.custom.push({ idx:i, title:q.title, core:q.core }); else N.q[q.key] = { on:true, core:q.core, idx:i }; }); }
+    // A single part named after the event shows a blank name, like when it was made
+    if (N.parts.length === 1 && N.parts[0].name === e.name) N.parts[0].name = '';
+  }
   if (!N.parts) N.parts = [blankPart(ymd(t))];
   if (!N.q) N.q = { with:{ on:true, core:false } };
   if (!N.custom) N.custom = [];
+  const v = ed ? ed.event : { name:'', place:'', organizer:me.name || '', orgEmail:me.email || '' };
+  setCircle(N.circle);
+  $('title').textContent = ed ? 'Edit event' : 'New event';
+  $('sub').innerHTML = '<a href="#" id="back">‹ ' + (ed ? 'Back to the event' : 'All events') + '</a>';
+  $('back').onclick = e => { e.preventDefault(); N.ed = null; if (ed) { renderEvent(false); startPoll(); } else openHome(); };
+  stopPoll();
   $('app').innerHTML =
     '<form id="nForm" novalidate>' +
+    (ed ? '<div class="card hint" style="color:var(--ink)">Changes go to both forms right away. People who already RSVPed keep their answers, ' +
+      'but they aren\'t told about changes, so let them know if a date or time moves.</div>' : '') +
     '<div class="card">' +
-      '<label class="f" for="nName">Event name</label><input type="text" id="nName" maxlength="100" placeholder="Winter Solstice Gathering">' +
+      '<label class="f" for="nName">Event name</label><input type="text" id="nName" maxlength="100" placeholder="Winter Solstice Gathering" value="' + esc(v.name) + '">' +
       '<label class="f">Hosted by</label><div class="seg" id="nCircle">' + Object.keys(CIRCLES).map(c =>
         '<button type="button" data-v="' + c + '" aria-pressed="' + (c === N.circle) + '">' + c + '</button>').join('') + '</div>' +
       '<label class="f">Where</label><div class="seg" id="nType">' + ['In person', 'Online'].map(c =>
         '<button type="button" data-v="' + c + '" aria-pressed="' + (c === N.type) + '">' + c + '</button>').join('') + '</div>' +
       '<div class="hint" style="margin-top:6px">In person: signing the PMA at check-in also makes someone Nexus 4.</div>' +
-      '<label class="f" for="nPlace">Place or Zoom <span class="hint">(optional, shown on the form)</span></label><input type="text" id="nPlace" maxlength="150">' +
+      '<label class="f" for="nPlace">Place or Zoom <span class="hint">(optional, shown on the form)</span></label><input type="text" id="nPlace" maxlength="150" value="' + esc(v.place) + '">' +
     '</div>' +
     '<div class="card"><h2>Parts</h2>' +
       '<div class="hint">One part is a simple event: the RSVP itself means yes. With two or more parts, people answer Yes or No to each.</div>' +
@@ -284,15 +312,17 @@ function renderNew() {
     '</div>' +
     '<div class="card"><h2>Questions on the form</h2><div class="hint">All optional for guests.</div><div id="qs"></div></div>' +
     '<div class="card"><h2>You, the organizer</h2>' +
-      '<label class="f" for="nOrg">Your name</label><input type="text" id="nOrg" maxlength="60" value="' + esc(me.name || '') + '">' +
-      '<label class="f" for="nOrgE">Your email</label><input type="email" id="nOrgE" maxlength="120" value="' + esc(me.email || '') + '">' +
+      '<label class="f" for="nOrg">Your name</label><input type="text" id="nOrg" maxlength="60" value="' + esc(v.organizer) + '">' +
+      '<label class="f" for="nOrgE">Your email</label><input type="email" id="nOrgE" maxlength="120" value="' + esc(v.orgEmail) + '">' +
       '<div class="hint" style="margin-top:6px">If someone RSVPs who isn\'t on the master list, you\'ll get an email to check who they are.</div>' +
     '</div>' +
-    '<button class="btn wide" type="submit" id="nGo">Create the event</button><div class="err" id="nErr" role="alert"></div></form>';
+    '<div class="card preview" id="preview"></div>' +
+    '<button class="btn wide" type="submit" id="nGo">' + (ed ? 'Save changes' : 'Create the event') + '</button><div class="err" id="nErr" role="alert"></div></form>';
   const seg = (id, key) => $(id).onclick = e => { const b = e.target.closest('button'); if (!b) return;
     N[key] = b.dataset.v; $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
     if (key === 'circle') setCircle(N.circle); };
   seg('nCircle', 'circle'); seg('nType', 'type');
+  $('nName').oninput = drawPreview; $('nPlace').oninput = drawPreview;
   $('addPart').onclick = () => {
     if (N.parts.length >= MAX_PARTS) return;
     N.parts.push(blankPart(N.parts[N.parts.length - 1].date)); drawParts();
@@ -303,17 +333,23 @@ function renderNew() {
     ev.preventDefault();
     const f = { name:$('nName').value, circle:N.circle, type:N.type, place:$('nPlace').value,
       organizer:$('nOrg').value, orgEmail:$('nOrgE').value,
-      parts:N.parts.map(p => ({ name:p.name, date:p.date, time:p.time, price:p.price, pma:p.pma, core:p.core })),
-      questions:QBANK.filter(q => N.q[q[0]] && N.q[q[0]].on).map(q => ({ key:q[0], core:!!N.q[q[0]].core }))
-        .concat(N.custom.filter(c => c.title.trim()).map(c => ({ key:'custom', title:c.title, core:!!c.core }))) };
+      parts:N.parts.map(p => ({ idx:p.idx, name:p.name, date:p.date, time:p.time, price:p.price, pma:p.pma, core:p.core })),
+      questions:QBANK.filter(q => N.q[q[0]] && N.q[q[0]].on).map(q => ({ idx:N.q[q[0]].idx, key:q[0], core:!!N.q[q[0]].core }))
+        .concat(N.custom.filter(c => c.title.trim()).map(c => ({ idx:c.idx, key:'custom', title:c.title, core:!!c.core }))) };
     store.set('ev-me', { name:f.organizer.trim(), email:f.orgEmail.trim() });
-    $('nGo').disabled = true; $('nGo').classList.add('working'); $('nGo').textContent = 'Making the forms and roster…'; $('nErr').textContent = '';
-    call('createEvent', [S.key, f], d => {
-      N.parts = N.q = N.custom = null;              // start fresh next time
-      S.data = d; S.id = d.event.id; S.part = 0; S.filter = 'yes';
-      history.replaceState(null, '', '#e-' + d.event.id + '-' + S.key);
-      renderEvent(true); startPoll();
-    }, msg => { $('nGo').disabled = false; $('nGo').classList.remove('working'); $('nGo').textContent = 'Create the event'; $('nErr').textContent = msg; });
+    const label = ed ? 'Save changes' : 'Create the event';
+    $('nGo').disabled = true; $('nGo').classList.add('working'); $('nErr').textContent = '';
+    $('nGo').textContent = ed ? 'Updating the forms and roster…' : 'Making the forms and roster…';
+    const done = d => {
+      N.parts = N.q = N.custom = N.ed = null;              // start fresh next time
+      S.data = d; S.id = d.event.id; S.part = pickPart(d); S.filter = 'yes';
+      if (!ed) history.replaceState(null, '', '#e-' + d.event.id + '-' + S.key);
+      renderEvent(!ed); startPoll();
+      if (ed) showToast('Saved. The forms and roster are updated.', null);
+    };
+    const bad = msg => { $('nGo').disabled = false; $('nGo').classList.remove('working'); $('nGo').textContent = label; $('nErr').textContent = msg; };
+    if (ed) call('editEvent', [S.key, ed.event.id, f], done, bad);
+    else call('createEvent', [S.key, f], done, bad);
   };
 }
 
@@ -321,25 +357,35 @@ function drawParts() {
   const many = N.parts.length > 1;
   $('parts').innerHTML = N.parts.map((p, i) =>
     '<div class="part" data-i="' + i + '">' +
-      (many ? '<div class="ph"><b>Part ' + (i + 1) + '</b><button type="button" class="x" data-rm="' + i + '">Remove</button></div>' : '') +
+      (many ? '<div class="ph"><b>Part ' + (i + 1) + '</b><button type="button" class="x" data-rm="' + i + '">' +
+        (p.arm ? 'Tap again to remove' : 'Remove') + '</button></div>' +
+        (p.arm ? '<div class="hint">It comes off the forms and the door. Answers already given stay on the roster sheet.</div>' : '') : '') +
       '<label class="f" for="pn' + i + '">' + (many ? 'Name' : 'Name <span class="hint">(optional: leave blank for a simple event)</span>') + '</label>' +
       '<input type="text" id="pn' + i + '" data-k="name" maxlength="60" placeholder="' + (many ? 'Open House' : 'Same as the event') + '" value="' + esc(p.name) + '">' +
       '<div class="two"><div><label class="f" for="pd' + i + '">Date</label><input type="date" id="pd' + i + '" data-k="date" value="' + esc(p.date) + '"></div>' +
       '<div><label class="f" for="pt' + i + '">Time</label><input type="text" id="pt' + i + '" data-k="time" maxlength="60" placeholder="4–7 pm" value="' + esc(p.time) + '"></div></div>' +
       '<label class="f" for="pp' + i + '">Cost <span class="hint">(blank or "free" if none)</span></label>' +
       '<input type="text" id="pp' + i + '" data-k="price" maxlength="60" placeholder="$10, cash welcome" value="' + esc(p.price) + '">' +
+      // Pick one or neither. Core only already means PMA signed, so ticking one greys out the other.
       '<div class="togs">' +
-        '<label class="tog"><input type="checkbox" data-k="pma"' + (p.pma ? ' checked' : '') + '> PMA required</label>' +
-        '<label class="tog"><input type="checkbox" data-k="core"' + (p.core ? ' checked' : '') + '> Core only</label>' +
+        '<label class="tog' + (p.core ? ' off' : '') + '"><input type="checkbox" data-k="pma"' + (p.pma ? ' checked' : '') + (p.core ? ' disabled' : '') + '> PMA required</label>' +
+        '<label class="tog' + (p.pma ? ' off' : '') + '"><input type="checkbox" data-k="core"' + (p.core ? ' checked' : '') + (p.pma ? ' disabled' : '') + '> Core only</label>' +
       '</div>' +
+      '<div class="hint">' + (p.core ? 'Core only: goes on the Core form only. PMA is already assumed.' : p.pma ? 'PMA required: on every form, open to all who\'ve signed.' :
+        'Neither: open to everyone, on every form.') + '</div>' +
     '</div>').join('');
   $('addPart').style.display = N.parts.length >= MAX_PARTS ? 'none' : '';
   $('parts').querySelectorAll('[data-k]').forEach(el => {
     const p = N.parts[Number(el.closest('.part').dataset.i)], k = el.dataset.k;
-    if (el.type === 'checkbox') el.onchange = () => { p[k] = el.checked; if (k === 'core') { formNote(); drawQs(); } };
-    else el.oninput = () => { p[k] = el.value; };
+    if (el.type === 'checkbox') el.onchange = () => { p[k] = el.checked; drawParts(); };   // redraw so the other box greys out
+    else el.oninput = () => { p[k] = el.value; drawPreview(); };
   });
-  $('parts').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { N.parts.splice(Number(b.dataset.rm), 1); drawParts(); });
+  // Removing a part that's already on the forms takes two taps; a part you just added goes with one
+  $('parts').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => {
+    const i = Number(b.dataset.rm), p = N.parts[i];
+    if (p.idx != null && !p.arm) { N.parts.forEach(x => x.arm = false); p.arm = true; drawParts(); return; }
+    N.parts.splice(i, 1); drawParts();
+  });
   formNote(); drawQs();
 }
 
@@ -347,9 +393,9 @@ function drawParts() {
 function formNote() {
   const core = N.parts.some(p => p.core), open = N.parts.some(p => !p.core);
   $('formNote').textContent = core && open
-    ? 'Two forms: an RSVP form with only the parts open to everyone, and a Core RSVP form with every part. Both fill one roster. Guests never see the word "Core".'
-    : core ? 'Every part is Core only, so there\'s one form: the Core RSVP form.'
-    : 'One RSVP form for everyone.';
+    ? 'Two forms: the Congregation form with the parts open to everyone, and the Core form with every part. Both fill one roster. Guests never see the word "Core".'
+    : core ? 'Every part is Core only, so there\'s one form: the Core form.'
+    : 'One form: the Congregation form.';
 }
 
 function drawQs() {
@@ -366,13 +412,34 @@ function drawQs() {
     (N.custom.length < MAX_CUSTOM ? '<button type="button" class="btn ghost wide" id="addQ" style="margin-top:10px">+ Add your own question</button>' : '');
   $('qs').querySelectorAll('[data-q]').forEach(el => el.onchange = () => {
     const k = el.dataset.q; N.q[k] = N.q[k] || {}; N.q[k].on = el.checked; drawQs(); });
-  $('qs').querySelectorAll('[data-qc]').forEach(el => el.onchange = () => { N.q[el.dataset.qc].core = el.checked; });
-  $('qs').querySelectorAll('[data-c]').forEach(el => el.oninput = () => { N.custom[Number(el.dataset.c)].title = el.value; });
-  $('qs').querySelectorAll('[data-cc]').forEach(el => el.onchange = () => { N.custom[Number(el.dataset.cc)].core = el.checked; });
+  $('qs').querySelectorAll('[data-qc]').forEach(el => el.onchange = () => { N.q[el.dataset.qc].core = el.checked; drawPreview(); });
+  $('qs').querySelectorAll('[data-c]').forEach(el => el.oninput = () => { N.custom[Number(el.dataset.c)].title = el.value; drawPreview(); });
+  $('qs').querySelectorAll('[data-cc]').forEach(el => el.onchange = () => { N.custom[Number(el.dataset.cc)].core = el.checked; drawPreview(); });
   $('qs').querySelectorAll('[data-crm]').forEach(el => el.onclick = () => { N.custom.splice(Number(el.dataset.crm), 1); drawQs(); });
   const add = $('addQ');
   if (add) add.onclick = () => { N.custom.push({ title:'', core:false }); drawQs(); $('cq' + (N.custom.length - 1)).focus(); };
+  drawPreview();
 }
+
+// "What guests will see": each form's parts and questions, updated as you type
+function drawPreview() {
+  const box = $('preview'); if (!box) return;
+  const name = ($('nName') && $('nName').value.trim()) || 'Your event';
+  const core = N.parts.some(p => p.core), open = N.parts.some(p => !p.core), many = N.parts.length > 1;
+  const qs = QBANK.filter(q => N.q[q[0]] && N.q[q[0]].on).map(q => ({ t:QTITLE[q[0]], core:core && !!N.q[q[0]].core }))
+    .concat(N.custom.filter(c => c.title.trim()).map(c => ({ t:c.title.trim(), core:core && !!c.core })));
+  const partLi = p => '<li><b>' + esc(p.name || name) + '</b> <span class="hint">' + esc([p.date ? dayMini(p.date) : '', p.time, p.price,
+    p.pma ? 'PMA required' : ''].filter(Boolean).join(' · ')) + '</span>' + (many ? ' <span class="hint">· Yes / No</span>' : '') + '</li>';
+  const form = (label, who, parts, qlist) => '<div class="pv"><div class="pvh">' + label + '</div><div class="hint">' + who + '</div>' +
+    '<div class="pvt">' + esc(name) + ' · RSVP</div>' +
+    '<ol><li>First name, last name, email, phone</li>' + (many ? '' : '<li>No part questions: sending the form means yes</li>') +
+    (many ? parts.map(partLi).join('') : '') + qlist.map(q => '<li>' + esc(q.t) + ' <span class="hint">(optional)</span></li>').join('') + '</ol>' +
+    (many ? '' : '<div class="hint">' + esc(partInfoText(N.parts[0])) + '</div>') + '</div>';
+  box.innerHTML = '<h2>What guests will see</h2>' +
+    (open ? form('Congregation form', core ? 'Send to the wider invite list.' : 'Send to the people you\'re inviting.', N.parts.filter(p => !p.core), qs.filter(q => !q.core)) : '') +
+    (core ? form('Core form', 'Send only to the Core group.', N.parts, qs) : '');
+}
+function partInfoText(p) { return [p.date ? dayMini(p.date) : '', p.time, p.price, p.pma ? 'PMA required' : ''].filter(Boolean).join(' · '); }
 
 // ===================== One event: check-in =====================
 function openEvent(id, key) {
@@ -385,20 +452,22 @@ function openEvent(id, key) {
 // Which part to show first: the one last picked on this phone, else today's, else the first
 function pickPart(d) {
   const P = d.event.parts, saved = store.get('ev-part-' + d.event.id);
-  if (saved != null && saved >= 0 && saved < P.length) return saved;
+  if (saved != null && saved >= 0 && saved < P.length && !P[saved].gone) return saved;
   const today = ymd(new Date());
-  const i = P.findIndex(p => p.date === today);
-  return i === -1 ? 0 : i;
+  const i = P.findIndex(p => p.date === today && !p.gone);
+  return i !== -1 ? i : Math.max(0, P.findIndex(p => !p.gone));
 }
 const curPart = () => S.data.event.parts[S.part] || S.data.event.parts[0];
-const multi = () => S.data.event.parts.length > 1;
+// Parts removed with "Edit event" stay in the list (so roster columns line up) but are hidden here
+const liveParts = () => S.data.event.parts.map((p, i) => ({ p:p, i:i })).filter(x => !x.p.gone);
+const multi = () => liveParts().length > 1;
 
 function renderEvent(justMade) {
   const d = S.data, e = d.event;
   setCircle(e.circle);
   $('kick').textContent = e.circle + ' · ' + e.type;
   $('title').textContent = e.name;
-  const when = e.parts.length > 1 ? (e.end && e.end !== e.date ? dayLong(e.date) + ' to ' + dayLong(e.end) : dayLong(e.date))
+  const when = multi() ? (e.end && e.end !== e.date ? dayLong(e.date) + ' to ' + dayLong(e.end) : dayLong(e.date))
     : dayLong(e.date) + (e.time ? ', ' + e.time : '');
   $('sub').innerHTML = esc(when + (e.place ? ' · ' + e.place : '')) +
     (d.team ? '<br><a href="#" id="back">‹ All events</a>' : '');
@@ -407,30 +476,33 @@ function renderEvent(justMade) {
   let h = '';
   if (d.team && d.links) {
     const L = d.links;
+    // A form whose parts were all moved away is closed, so its link isn't offered
+    const hasCore = liveParts().some(x => x.p.core), hasOpen = e.legacy || liveParts().some(x => !x.p.core);
     const linkRow = (title, hint, url, ghost) => '<div class="row"><b>' + title + '</b><div class="hint">' + hint + '</div>' +
       '<div class="link"><code>' + esc(url) + '</code><button class="btn small' + (ghost ? ' ghost' : '') + '" type="button" data-copy="' + esc(url) + '">Copy</button></div></div>';
     h += '<details class="card"' + (justMade ? ' open' : '') + '><summary>' + (justMade ? 'Your event is ready. Here are its links' : 'Links for this event') + '</summary>' +
-      (L.rsvp ? linkRow('RSVP form' + (L.coreRsvp ? ' (open to everyone)' : ''), L.coreRsvp ? 'Only the parts open to everyone. Send this to the wider invite list.' : 'Send this to the people you\'re inviting.', L.rsvp) : '') +
-      (L.coreRsvp ? linkRow('Core RSVP form', 'Every part, including Core only. Send this only to the Core group.', L.coreRsvp) : '') +
+      (L.rsvp && hasOpen ? linkRow('Congregation form', hasCore ? 'The parts open to everyone. Send this to the wider invite list.' : 'Send this to the people you\'re inviting.', L.rsvp) : '') +
+      (L.coreRsvp && hasCore ? linkRow('Core form', 'Every part, including Core only. Send this only to the Core group.', L.coreRsvp) : '') +
       linkRow('Door link', 'For a volunteer checking people in. It opens only this event.', L.door, true) +
       '<div class="row"><a href="' + esc(L.sheet) + '" target="_blank" rel="noopener">Open the roster sheet</a>' +
-        (L.form ? ' &nbsp;·&nbsp; <a href="' + esc(L.form) + '" target="_blank" rel="noopener">Edit the ' + (L.coreForm ? 'RSVP ' : '') + 'form</a>' : '') +
-        (L.coreForm ? ' &nbsp;·&nbsp; <a href="' + esc(L.coreForm) + '" target="_blank" rel="noopener">Edit the Core form</a>' : '') +
-        (e.legacy ? '' : '<div class="hint" style="margin-top:6px">Editing a form: change wording freely, but don\'t rename the part questions. That\'s how answers find their column.</div>') +
-      '</div></details>';
+        (e.legacy && L.form ? ' &nbsp;·&nbsp; <a href="' + esc(L.form) + '" target="_blank" rel="noopener">Edit the form</a>' : '') +
+      '</div></details>' +
+      (e.legacy ? '' : '<div class="card"><button class="btn ghost wide" type="button" id="editBtn">✏️ Edit this event</button>' +
+        '<div class="hint" style="margin-top:8px">Name, place, parts, dates, prices and questions. Both forms and the roster update to match.</div></div>');
   }
   // Team only, once the event has started: the after-event report and follow-up checklist
   if (d.team && (e.isPast || e.isToday)) h += '<div class="card"><button class="btn ghost wide" type="button" id="repBtn">📋 Follow-up report</button>' +
     '<div class="hint" id="repMsg" style="margin-top:8px">Who came to each part, who didn\'t, PMA and payments, and the follow-up checklist. It also goes to anchor@ and academy@ the morning after.</div></div>';
   h += '<div class="sticky">' +
     (multi() ? '<div class="now"><label for="partSel">Now checking in</label><select id="partSel">' +
-      e.parts.map((p, i) => '<option value="' + i + '"' + (i === S.part ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') +
+      liveParts().map(x => '<option value="' + x.i + '"' + (x.i === S.part ? ' selected' : '') + '>' + esc(x.p.name) + '</option>').join('') +
       '</select></div><div class="partinfo" id="partInfo"></div>' : '') +
     '<div id="stats"></div><input type="search" id="q" placeholder="Search names" autocomplete="off" value="' + esc(S.q) + '">' +
     '<div class="chips" id="chips"></div></div><div id="list"></div>' +
     '<button class="btn ghost wide" type="button" id="walkBtn" style="margin-top:6px">+ Add someone at the door</button><div id="walk"></div>';
   $('app').innerHTML = h;
   $('app').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copyText(b, b.dataset.copy));
+  if ($('editBtn')) $('editBtn').onclick = () => renderNew(S.data);
   $('q').oninput = () => { S.q = $('q').value; drawList(); };
   if ($('partSel')) $('partSel').onchange = () => {
     S.part = Number($('partSel').value); store.set('ev-part-' + e.id, S.part);
@@ -470,7 +542,7 @@ function drawList() {
   const c = counts(), part = curPart(), legacy = S.data.event.legacy;
   if ($('partInfo')) $('partInfo').textContent = [dayMini(part.date), part.time, part.price, part.pma ? 'PMA required' : '', part.core ? 'Core only' : '']
     .filter(Boolean).join(' · ');
-  const roseOn = c.nopma && (legacy || part.pma);
+  const roseOn = c.nopma && (legacy || part.pma || part.core);
   $('stats').innerHTML = '<div class="stats">' +
     '<div class="stat"><b>' + c.yes + '</b><span>' + (legacy ? 'on roster' : 'coming') + '</span></div>' +
     '<div class="stat"><b>' + c.here + '</b><span>here</span></div>' +
@@ -506,7 +578,7 @@ function drawList() {
 
 function card(p) {
   const e = S.data.event, part = curPart(), x = pp(p), legacy = e.legacy;
-  const needPma = legacy || part.pma;
+  const needPma = legacy || part.pma || part.core;   // Core only includes the PMA
   const tags = [];
   if (!legacy && multi()) tags.push(x.ans === 'Yes' ? '<span class="tag yes">Said yes</span>' : x.ans === 'No' ? '<span class="tag no">Said no</span>'
     : x.ans === 'Walk-in' ? '<span class="tag new">Walk-in</span>' : '<span class="tag">No answer for this part</span>');
@@ -518,12 +590,12 @@ function card(p) {
   if (p.isNew) tags.push('<span class="tag new">New: check who this is</span>');
   if (!p.onList) tags.push('<span class="tag new">Not on master list</span>');
   // Every part at a glance: ✓ yes, ✗ no, – no answer
-  const glance = !legacy && multi() ? '<div class="pl">' + e.parts.map((pt, i) => {
+  const glance = !legacy && multi() ? '<div class="pl">' + liveParts().map(({ p:pt, i }) => {
     const a = p.parts[i] || {};
     const mark = a.here ? '✓ here' : a.ans === 'Yes' ? '✓' : a.ans === 'No' ? '✗' : a.ans === 'Walk-in' ? '✓' : '–';
     return (i === S.part ? '<b>' : '') + esc(pt.name) + ' ' + mark + (i === S.part ? '</b>' : '');
   }).join(' · ') + '</div>' : '';
-  const answers = p.answers.length ? '<div class="ans">' + p.answers.map(a => '<b>' + esc(a.t.replace(/\?.*$/, '').replace(/ \(name only\)/, '')) + ':</b> ' + esc(a.v)).join('<br>') + '</div>' : '';
+  const answers = p.answers.length ? '<div class="ans">' + p.answers.map(a => '<b>' + esc(/bringing a guest|coming with/i.test(a.t) ? 'Guest' : a.t.replace(/\?.*$/, '')) + ':</b> ' + esc(a.v)).join('<br>') + '</div>' : '';
   const showPaid = legacy || priced(part.price);
   return '<div class="p' + (!p.pma && needPma ? ' nopma' : '') + '" data-email="' + esc(p.email) + '">' +
     '<div class="top"><div class="who"><div class="nm">' + esc(p.first + ' ' + p.last) + '</div>' +
