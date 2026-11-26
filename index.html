@@ -13,7 +13,7 @@
 <!-- Share preview: the card people see when a link is texted or posted -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="TOLE Events">
-<meta property="og:description" content="RSVPs, rosters and check-in for Anchor and Academy.">
+<meta property="og:description" content="RSVPs, rosters and check-in for Anchor, Academy and Ministry.">
 <meta property="og:image" content="https://tole-admin.github.io/events/preview.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -22,7 +22,8 @@
 <meta name="theme-color" content="#0a53a8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&display=swap" rel="stylesheet">
-<!-- Events page v3.2 (Nov 26, 2026): edit events, live preview, Congregation / Core form names. Needs the Events script v3.2. -->
+<!-- Events page v3.2.1 (Nov 26, 2026): Ministry can host; guest question starts unticked.
+     v3.2 (Nov 26, 2026): edit events, live preview, Congregation / Core form names. Needs the Events script v3.2. -->
 <style>
   :root { --ink:#1b2333; --quiet:#5f6368; --line:#e3e6ea; --bg:#ffffff; --soft:#f4f6f9;
           --c:#0a53a8; --cfg:#ffffff; --rose:#f8d7dc; --roseInk:#8a1c2c; --ok:#11734b; --gold:#E69B36; }
@@ -161,8 +162,8 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6TvY8Xz3VGif1NBYBWbxwpvY2ImKLod5QbIAkgXsJ30aon6mCtjCpOKWPgyc7MCg/exec';
 // This page holds no roster data. Everything comes from the script, and only for a link
 // that carries the team key or an event's door key (after the #, which never reaches GitHub).
-// Circle colors (guides/Circle Colors.md): events are run by Anchor or Academy
-const CIRCLES = { 'Anchor':'#0a53a8', 'Academy':'#3d3d3d' };
+// Circle colors (guides/Circle Colors.md): events are run by Anchor, Academy or Ministry
+const CIRCLES = { 'Anchor':'#0a53a8', 'Academy':'#3d3d3d', 'Ministry':'#5a3286' };
 const PMA_PAY = ['Cash', 'Check', 'Precious metal'];
 const UNDO_MS = 6000;
 // The ready-made questions (the script holds the exact wording the form shows)
@@ -230,7 +231,7 @@ const S = { key:'', team:false, id:'', data:null, part:0, filter:'yes', q:'', pe
 // ===================== Team home: all events =====================
 function openHome() {
   stopPoll(); S.id = ''; setCircle('Anchor');
-  $('kick').textContent = 'TOLE Events · Anchor & Academy';
+  $('kick').textContent = 'TOLE Events · Anchor, Academy & Ministry';
   $('title').textContent = 'Events';
   $('sub').textContent = 'RSVPs, rosters and check-in';
   $('app').innerHTML = '<div class="center">Loading events…</div>';
@@ -283,7 +284,7 @@ function renderNew(ed) {
     if (N.parts.length === 1 && N.parts[0].name === e.name) N.parts[0].name = '';
   }
   if (!N.parts) N.parts = [blankPart(ymd(t))];
-  if (!N.q) N.q = { with:{ on:true, core:false } };
+  if (!N.q) N.q = {};                       // every question starts off; the organizer picks
   if (!N.custom) N.custom = [];
   const v = ed ? ed.event : { name:'', place:'', organizer:me.name || '', orgEmail:me.email || '' };
   setCircle(N.circle);
@@ -492,7 +493,7 @@ function renderEvent(justMade) {
   }
   // Team only, once the event has started: the after-event report and follow-up checklist
   if (d.team && (e.isPast || e.isToday)) h += '<div class="card"><button class="btn ghost wide" type="button" id="repBtn">📋 Follow-up report</button>' +
-    '<div class="hint" id="repMsg" style="margin-top:8px">Who came to each part, who didn\'t, PMA and payments, and the follow-up checklist. It also goes to anchor@ and academy@ the morning after.</div></div>';
+    '<div class="hint" id="repMsg" style="margin-top:8px">Who came to each part, who didn\'t, PMA and payments, and the follow-up checklist. It also goes to the circles by email the morning after.</div></div>';
   h += '<div class="sticky">' +
     (multi() ? '<div class="now"><label for="partSel">Now checking in</label><select id="partSel">' +
       liveParts().map(x => '<option value="' + x.i + '"' + (x.i === S.part ? ' selected' : '') + '>' + esc(x.p.name) + '</option>').join('') +
@@ -691,7 +692,7 @@ function route(h) {
   if ((m = h.match(/^t-([A-Za-z]{20})$/))) { S.key = m[1]; S.team = true; openHome(); return; }
   if ((m = h.match(/^e-([A-Za-z]{8})-([A-Za-z]{12,20})$/))) { openEvent(m[1], m[2]); return; }
   $('title').textContent = 'TOLE Events';
-  $('app').innerHTML = '<div class="center">This page needs a team or door link. Ask the Anchor or Academy circle for yours.</div>';
+  $('app').innerHTML = '<div class="center">This page needs a team or door link. Ask the Anchor, Academy or Ministry circle for yours.</div>';
 }
 window.addEventListener('hashchange', () => route(location.hash));
 route(location.hash);
